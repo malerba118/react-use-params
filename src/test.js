@@ -1,7 +1,6 @@
-import ExampleComponent from './'
 
-describe('ExampleComponent', () => {
+describe('usqQueryParams', () => {
   it('is truthy', () => {
-    expect(ExampleComponent).toBeTruthy()
+    expect(true).toBeTruthy()
   })
 })

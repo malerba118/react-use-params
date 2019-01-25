@@ -63,11 +63,5 @@
   },
   "files": [
     "dist"
-  ],
-  "eslintIgnore": [
-    "index.es.js",
-    "/example/src/index.es.js",
-    "src/index.es.js",
-    "example/src/index.es.js"
   ]
 }
