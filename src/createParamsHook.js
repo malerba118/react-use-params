@@ -75,6 +75,22 @@ export default (history) => (paramsSchema) => {
         } else {
           relevantParams = params;
         }
+        //remove params whose types don't match schema type
+        let validations = schema.validateParams(relevantParams)
+        Object.keys(validations).forEach(paramName => {
+          if(validations[paramName] === false) {
+            delete relevantParams[paramName]
+          }
+        })
+        //replace undefined values with default values
+        Object.keys(relevantParams).forEach(paramName => {
+          if (relevantParams[paramName] === undefined) {
+            let s = schema.getSchemaByName(paramName)
+            if (s) {
+              relevantParams[paramName] = s.defaultValue
+            }
+          }
+        })
         return {
           ...prevParams,
           ...relevantParams

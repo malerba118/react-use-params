@@ -65,6 +65,41 @@ class ParamSchema {
     }
   };
 
+  getSchemaByName = (name) => {
+    return this.schemas.filter((schema) => schema.name === name)[0] || null
+  }
+
+  _getType = (param) => {
+    if (Array.isArray(param)) {
+      return 'array'
+    }
+    return typeof param
+  }
+
+  // Validate a params object.
+  // Returns map indicating for each param, whether it is valid or not.
+  validateParams = (params) => {
+    let validMap = {}
+    Object.keys(params).forEach((paramName) => {
+      let schema = this.getSchemaByName(paramName)
+      if (!schema) {
+        //if there's no schema for it, it's invalid
+        validMap[paramName] = false
+      }
+      else {
+        validMap[paramName] = this.validateParam(schema, params[paramName])
+      }
+    })
+    return validMap
+  }
+
+  validateParam = (schema, param) => {
+    if (param === null || param === undefined) {
+      return true
+    }
+    return this._getType(param) === schema.type
+  }
+
   processAfterParse = (schema, param) => {
     try {
       param = coerceAfterParse(schema, param);

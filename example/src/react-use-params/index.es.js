@@ -4410,7 +4410,11 @@ var ParamSchema = function ParamSchema(schemas) {
 
   this.validateSchemas(schemas);
   this.schemas = schemas;
-};
+}
+
+// Validate a params object.
+// Returns map indicating for each param, whether it is valid or not.
+;
 
 var _initialiseProps = function _initialiseProps() {
   var _this = this;
@@ -4437,6 +4441,41 @@ var _initialiseProps = function _initialiseProps() {
     if (errors.length) {
       throw new Error(errors);
     }
+  };
+
+  this.getSchemaByName = function (name) {
+    return _this.schemas.filter(function (schema) {
+      return schema.name === name;
+    })[0] || null;
+  };
+
+  this._getType = function (param) {
+    if (Array.isArray(param)) {
+      return 'array';
+    }
+    return typeof param === "undefined" ? "undefined" : _typeof(param);
+  };
+
+  this.validateParams = function (params) {
+    var validMap = {};
+    Object.keys(params).forEach(function (paramName) {
+      var schema = _this.getSchemaByName(paramName);
+      if (!schema) {
+        //if there's no schema for it, it's invalid
+        validMap[paramName] = false;
+      } else {
+        validMap[paramName] = _this.validateParam(schema, params[paramName]);
+      }
+    });
+    return validMap;
+  };
+
+  this.validateParam = function (schema, param) {
+    if (param === null || param === undefined) {
+      return true;
+    }
+    console.log(_this._getType(param), schema.type);
+    return _this._getType(param) === schema.type;
   };
 
   this.processAfterParse = function (schema, param) {
@@ -4491,7 +4530,7 @@ var createParamsHook = (function (history) {
   return function (paramsSchema) {
     var schema = new ParamSchema(paramsSchema);
 
-    var _useState = useState(3000),
+    var _useState = useState(0),
         _useState2 = slicedToArray(_useState, 2),
         debounceTime = _useState2[0],
         setDebounceTime = _useState2[1];
@@ -4517,7 +4556,6 @@ var createParamsHook = (function (history) {
         });
 
         if (!isEqual_1(relevantPrevParams, value)) {
-          console.log("updating query params from state", relevantPrevParams, value);
           history.push({
             search: schema.stringify(_extends({}, allPrevParams, value), { includeExcess: true })
           });
@@ -4534,6 +4572,7 @@ var createParamsHook = (function (history) {
         var updatedParams = schema.parse(location.search, {
           includeExcess: false
         });
+        console.log(_typeof(updatedParams.queryParam), updatedParams.queryParam);
         setValue(function (value) {
           return _extends({}, value, updatedParams);
         });
@@ -4551,6 +4590,22 @@ var createParamsHook = (function (history) {
           } else {
             relevantParams = params;
           }
+          //remove params whose types don't match schema type
+          var validations = schema.validateParams(relevantParams);
+          Object.keys(validations).forEach(function (paramName) {
+            if (validations[paramName] === false) {
+              delete relevantParams[paramName];
+            }
+          });
+          //replace undefined values with default values
+          Object.keys(relevantParams).forEach(function (paramName) {
+            if (relevantParams[paramName] === undefined) {
+              var s = schema.getSchemaByName(paramName);
+              if (s) {
+                relevantParams[paramName] = s.defaultValue;
+              }
+            }
+          });
           return _extends({}, prevParams, relevantParams);
         });
       }

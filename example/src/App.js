@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import Slider from "@material-ui/lab/Slider";
+import history from './history'
 
 import useQueryParams from "./useQueryParams";
 
@@ -58,6 +59,13 @@ const App = props => {
           }}
         >
           Next Page
+        </button>
+        <button
+          onClick={() => {
+            history.push({search: '?page=25'})
+          }}
+        >
+          Push Page to History
         </button>
       </div>
       <div>
