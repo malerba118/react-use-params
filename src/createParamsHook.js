@@ -8,7 +8,7 @@ import ParamSchema from "./ParamSchema";
 
 export default (history) => (paramsSchema) => {
   const schema = new ParamSchema(paramsSchema);
-  let [debounceTime, setDebounceTime] = useState(3000);
+  let [debounceTime, setDebounceTime] = useState(0);
   let [value, setValue] = useState(
     schema.parse(window.location.search, {
       includeExcess: false
@@ -30,11 +30,6 @@ export default (history) => (paramsSchema) => {
         });
 
         if (!isEqual(relevantPrevParams, value)) {
-          console.log(
-            "updating query params from state",
-            relevantPrevParams,
-            value
-          );
           history.push({
             search: schema.stringify(
               {

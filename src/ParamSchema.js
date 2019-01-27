@@ -6,7 +6,7 @@ import merge from "lodash/merge";
 
 function coerceAfterParse(schema, param) {
   let coercedParam;
-  if (param === "null") {
+  if (param === null) {
     coercedParam = null;
   } else if (schema.type === "number") {
     coercedParam = Number(param);

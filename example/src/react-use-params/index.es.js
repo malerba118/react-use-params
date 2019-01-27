@@ -4372,7 +4372,7 @@ var slicedToArray = function () {
 
 function coerceAfterParse(schema, param) {
   var coercedParam = void 0;
-  if (param === "null") {
+  if (param === null) {
     coercedParam = null;
   } else if (schema.type === "number") {
     coercedParam = Number(param);
