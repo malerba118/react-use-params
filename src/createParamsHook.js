@@ -7,12 +7,28 @@ import debounce from "lodash/debounce";
 import ParamSchema from "./ParamSchema";
 
 export default (history) => (paramsSchema) => {
+
   const schema = new ParamSchema(paramsSchema);
+
+  const processParams = (params) => {
+    let validations = schema.validateParams(params)
+    Object.keys(validations).forEach(paramName => {
+      if(validations[paramName] === false) {
+        delete params[paramName]
+      }
+    })
+    params = schema.applyDefaultsToParams(params)
+    params = schema.coerceParams(params)
+    return params
+  }
+
   let [debounceTime, setDebounceTime] = useState(0);
   let [value, setValue] = useState(
-    schema.parse(window.location.search, {
-      includeExcess: false
-    })
+    processParams(
+      schema.parse(window.location.search, {
+        includeExcess: false
+      })
+    )
   );
 
   const syncQueryParams = useRef();
@@ -52,12 +68,28 @@ export default (history) => (paramsSchema) => {
     [value]
   );
 
+  const setParams = params => {
+    setValue(prevParams => {
+      let relevantParams;
+      if (typeof params === "function") {
+        relevantParams = params(prevParams);
+      } else {
+        relevantParams = params;
+      }
+      relevantParams = processParams(relevantParams)
+      return {
+        ...prevParams,
+        ...relevantParams
+      };
+    });
+  }
+
   useEffect(() => {
     let unlisten = history.listen((location, a) => {
       let updatedParams = schema.parse(location.search, {
         includeExcess: false
       });
-      setValue(value => ({
+      setParams(value => ({
         ...value,
         ...updatedParams
       }));
@@ -67,43 +99,6 @@ export default (history) => (paramsSchema) => {
 
   return {
     data: value,
-    setParams: params => {
-      setValue(prevParams => {
-        let relevantParams;
-        if (typeof params === "function") {
-          relevantParams = params(prevParams);
-        } else {
-          relevantParams = params;
-        }
-        //remove params whose types don't match schema type
-        let validations = schema.validateParams(relevantParams)
-        Object.keys(validations).forEach(paramName => {
-          if(validations[paramName] === false) {
-            delete relevantParams[paramName]
-          }
-        })
-        Object.keys(relevantParams).forEach(paramName => {
-          let s = schema.getSchemaByName(paramName)
-          if (s) {
-            if (relevantParams[paramName] === undefined) {
-              //replace undefined values with default values
-              relevantParams[paramName] = s.defaultValue
-            }
-            if (s.type === 'boolean') {
-              //coerce to nullable boolean
-              relevantParams[paramName] = relevantParams[paramName] === null ? null : !!relevantParams[paramName]
-            }
-            else if (s.type === 'string') {
-              //coerce to nullable string
-              relevantParams[paramName] = relevantParams[paramName] === null ? null : String(relevantParams[paramName])
-            }
-          }
-        })
-        return {
-          ...prevParams,
-          ...relevantParams
-        };
-      });
-    }
+    setParams: setParams
   };
 }

@@ -4318,6 +4318,21 @@ var classCallCheck = function (instance, Constructor) {
   }
 };
 
+var defineProperty$1 = function (obj, key, value) {
+  if (key in obj) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+  } else {
+    obj[key] = value;
+  }
+
+  return obj;
+};
+
 var _extends = Object.assign || function (target) {
   for (var i = 1; i < arguments.length; i++) {
     var source = arguments[i];
@@ -4380,7 +4395,9 @@ function coerceAfterParse(schema, param) {
       throw new Error("Not a number");
     }
   } else if (schema.type === "boolean") {
-    if (param === "false" || param === "0" || param === "NaN") {
+    if (param === undefined) {
+      return undefined;
+    } else if (param === "false" || param === "0" || param === "NaN") {
       // handle falsey values
       coercedParam = false;
     } else {
@@ -4405,44 +4422,27 @@ function coerceBeforeStringify(schema, param) {
 }
 
 var ParamSchema = function ParamSchema(schemas) {
-  classCallCheck(this, ParamSchema);
-
-  _initialiseProps.call(this);
-
-  this.validateSchemas(schemas);
-  this.schemas = schemas;
-}
-
-// Validate a params object.
-// Returns map indicating for each param, whether it is valid or not.
-;
-
-var _initialiseProps = function _initialiseProps() {
   var _this = this;
 
-  this.validateSchemas = function (schemas) {
-    // TODO: substitute in validateParams here
-    var errors = schemas.map(function (schema) {
-      if (_typeof(schema.defaultValue) === schema.type) {
-        return;
-      } else {
-        if (schema.type === "array") {
-          if (Array.isArray(schema.defaultValue)) {
-            return;
-          }
-        }
-        if (schema.defaultValue === null || schema.defaultValue === undefined) {
-          return;
-        }
-        return "defaultValue for " + schema.name + " does not match type";
+  classCallCheck(this, ParamSchema);
+
+  this._validateSchemas = function () {
+    var validations = _this.validateParams(_this.getDefaultParams());
+    var errors = [];
+    Object.keys(validations).forEach(function (paramName) {
+      if (validations[paramName] === false) {
+        errors.push("defaultValue for " + paramName + " is disallowed due to type");
       }
-    });
-    errors = errors.filter(function (e) {
-      return !!e;
     });
     if (errors.length) {
       throw new Error(errors);
     }
+  };
+
+  this.getDefaultParams = function () {
+    return _this.schemas.reduce(function (map, s) {
+      return _extends({}, map, defineProperty$1({}, s.name, s.defaultValue));
+    }, {});
   };
 
   this.getSchemaByName = function (name) {
@@ -4477,6 +4477,36 @@ var _initialiseProps = function _initialiseProps() {
       return true;
     }
     return _this._getType(param) === schema.type;
+  };
+
+  this.applyDefaultsToParams = function (params) {
+    var paramsWithDefaults = _extends({}, params);
+    Object.keys(params).forEach(function (paramName) {
+      var schema = _this.getSchemaByName(paramName);
+      if (schema) {
+        if (paramsWithDefaults[paramName] === undefined) {
+          paramsWithDefaults[paramName] = schema.defaultValue;
+        }
+      }
+    });
+    return paramsWithDefaults;
+  };
+
+  this.coerceParams = function (params) {
+    var coercedParams = _extends({}, params);
+    Object.keys(params).forEach(function (paramName) {
+      var schema = _this.getSchemaByName(paramName);
+      if (schema) {
+        if (schema.type === 'boolean') {
+          //coerce to nullable boolean
+          coercedParams[paramName] = coercedParams[paramName] === null ? null : !!coercedParams[paramName];
+        } else if (schema.type === 'string') {
+          //coerce to nullable string
+          coercedParams[paramName] = coercedParams[paramName] === null ? null : String(coercedParams[paramName]);
+        }
+      }
+    });
+    return coercedParams;
   };
 
   this.processAfterParse = function (schema, param) {
@@ -4525,20 +4555,40 @@ var _initialiseProps = function _initialiseProps() {
     }
     return queryString.stringify(processedParams);
   };
-};
+
+  this.schemas = schemas;
+  this._validateSchemas();
+}
+
+// Validate a params object.
+// Returns map indicating for each param, whether it is valid or not.
+;
 
 var createParamsHook = (function (history) {
   return function (paramsSchema) {
+
     var schema = new ParamSchema(paramsSchema);
+
+    var processParams = function processParams(params) {
+      var validations = schema.validateParams(params);
+      Object.keys(validations).forEach(function (paramName) {
+        if (validations[paramName] === false) {
+          delete params[paramName];
+        }
+      });
+      params = schema.applyDefaultsToParams(params);
+      params = schema.coerceParams(params);
+      return params;
+    };
 
     var _useState = useState(0),
         _useState2 = slicedToArray(_useState, 2),
         debounceTime = _useState2[0],
         setDebounceTime = _useState2[1];
 
-    var _useState3 = useState(schema.parse(window.location.search, {
+    var _useState3 = useState(processParams(schema.parse(window.location.search, {
       includeExcess: false
-    })),
+    }))),
         _useState4 = slicedToArray(_useState3, 2),
         value = _useState4[0],
         setValue = _useState4[1];
@@ -4568,12 +4618,25 @@ var createParamsHook = (function (history) {
       syncQueryParams.current(value);
     }, [value]);
 
+    var setParams = function setParams(params) {
+      setValue(function (prevParams) {
+        var relevantParams = void 0;
+        if (typeof params === "function") {
+          relevantParams = params(prevParams);
+        } else {
+          relevantParams = params;
+        }
+        relevantParams = processParams(relevantParams);
+        return _extends({}, prevParams, relevantParams);
+      });
+    };
+
     useEffect(function () {
       var unlisten = history.listen(function (location, a) {
         var updatedParams = schema.parse(location.search, {
           includeExcess: false
         });
-        setValue(function (value) {
+        setParams(function (value) {
           return _extends({}, value, updatedParams);
         });
       });
@@ -4582,40 +4645,7 @@ var createParamsHook = (function (history) {
 
     return {
       data: value,
-      setParams: function setParams(params) {
-        setValue(function (prevParams) {
-          var relevantParams = void 0;
-          if (typeof params === "function") {
-            relevantParams = params(prevParams);
-          } else {
-            relevantParams = params;
-          }
-          //remove params whose types don't match schema type
-          var validations = schema.validateParams(relevantParams);
-          Object.keys(validations).forEach(function (paramName) {
-            if (validations[paramName] === false) {
-              delete relevantParams[paramName];
-            }
-          });
-          Object.keys(relevantParams).forEach(function (paramName) {
-            var s = schema.getSchemaByName(paramName);
-            if (s) {
-              if (relevantParams[paramName] === undefined) {
-                //replace undefined values with default values
-                relevantParams[paramName] = s.defaultValue;
-              }
-              if (s.type === 'boolean') {
-                //coerce to nullable boolean
-                relevantParams[paramName] = relevantParams[paramName] === null ? null : !!relevantParams[paramName];
-              } else if (s.type === 'string') {
-                //coerce to nullable string
-                relevantParams[paramName] = relevantParams[paramName] === null ? null : String(relevantParams[paramName]);
-              }
-            }
-          });
-          return _extends({}, prevParams, relevantParams);
-        });
-      }
+      setParams: setParams
     };
   };
 });

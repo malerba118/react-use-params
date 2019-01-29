@@ -14,7 +14,10 @@ function coerceAfterParse(schema, param) {
       throw new Error("Not a number");
     }
   } else if (schema.type === "boolean") {
-    if (param === "false" || param === "0" || param === "NaN") {
+    if (param === undefined) {
+      return undefined
+    }
+    else if (param === "false" || param === "0" || param === "NaN") {
       // handle falsey values
       coercedParam = false;
     }
@@ -41,32 +44,34 @@ function coerceBeforeStringify(schema, param) {
 
 class ParamSchema {
   constructor(schemas) {
-    this.validateSchemas(schemas);
     this.schemas = schemas;
+    this._validateSchemas();
   }
 
-  validateSchemas = schemas => {
-    // TODO: substitute in validateParams here
-    let errors = schemas.map(schema => {
-      if (typeof schema.defaultValue === schema.type) {
-        return;
-      } else {
-        if (schema.type === "array") {
-          if (Array.isArray(schema.defaultValue)) {
-            return;
-          }
-        }
-        if (schema.defaultValue === null || schema.defaultValue === undefined) {
-          return;
-        }
-        return `defaultValue for ${schema.name} does not match type`;
+  _validateSchemas = () => {
+    let validations = this.validateParams(this.getDefaultParams())
+    let errors = []
+    Object.keys(validations).forEach((paramName) => {
+      if (validations[paramName] === false) {
+        errors.push(`defaultValue for ${paramName} is disallowed due to type`)
       }
-    });
-    errors = errors.filter(e => !!e);
+    })
     if (errors.length) {
       throw new Error(errors);
     }
   };
+
+  getDefaultParams = () => {
+    return this.schemas.reduce(
+      (map, s) => {
+        return {
+          ...map,
+          [s.name]: s.defaultValue
+        }
+      },
+      {}
+    );
+  }
 
   getSchemaByName = (name) => {
     return this.schemas.filter((schema) => schema.name === name)[0] || null
@@ -106,6 +111,37 @@ class ParamSchema {
       return true
     }
     return this._getType(param) === schema.type
+  }
+
+  applyDefaultsToParams = (params) => {
+    let paramsWithDefaults = {...params}
+    Object.keys(params).forEach((paramName) => {
+      let schema = this.getSchemaByName(paramName)
+      if (schema) {
+        if (paramsWithDefaults[paramName] === undefined) {
+          paramsWithDefaults[paramName] = schema.defaultValue
+        }
+      }
+    })
+    return paramsWithDefaults
+  }
+
+  coerceParams = (params) => {
+    let coercedParams = {...params}
+    Object.keys(params).forEach((paramName) => {
+      let schema = this.getSchemaByName(paramName)
+      if (schema) {
+        if (schema.type === 'boolean') {
+          //coerce to nullable boolean
+          coercedParams[paramName] = coercedParams[paramName] === null ? null : !!coercedParams[paramName]
+        }
+        else if (schema.type === 'string') {
+          //coerce to nullable string
+          coercedParams[paramName] = coercedParams[paramName] === null ? null : String(coercedParams[paramName])
+        }
+      }
+    })
+    return coercedParams
   }
 
   processAfterParse = (schema, param) => {
