@@ -3,11 +3,12 @@ import ReactDOM from 'react-dom'
 
 import './index.css'
 import App from './App'
+import { SnackbarProvider } from 'notistack';
 
 ReactDOM.render(
-  <div>
-    <App />
-  </div>
+  <SnackbarProvider maxSnack={1}>
+      <App />
+  </SnackbarProvider>
   ,
   document.getElementById('root')
 )

@@ -94,7 +94,7 @@ class ParamSchema {
   }
 
   validateParam = (schema, param) => {
-    if (param === null || param === undefined) {
+    if (param === null || param === undefined || schema.type === 'boolean') {
       return true
     }
     return this._getType(param) === schema.type

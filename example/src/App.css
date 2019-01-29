@@ -1,0 +1,17 @@
+.params-container {
+  display: flex;
+}
+
+.param-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.param-container button {
+  width: 300px;
+  margin: 8px;
+  text-transform: none;
+}

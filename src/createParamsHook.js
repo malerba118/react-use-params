@@ -82,12 +82,16 @@ export default (history) => (paramsSchema) => {
             delete relevantParams[paramName]
           }
         })
-        //replace undefined values with default values
         Object.keys(relevantParams).forEach(paramName => {
-          if (relevantParams[paramName] === undefined) {
-            let s = schema.getSchemaByName(paramName)
-            if (s) {
+          let s = schema.getSchemaByName(paramName)
+          if (s) {
+            if (relevantParams[paramName] === undefined) {
+              //replace undefined values with default values
               relevantParams[paramName] = s.defaultValue
+            }
+            if (s.type === 'boolean') {
+              //coerce to boolean
+              relevantParams[paramName] = !!relevantParams[paramName]
             }
           }
         })

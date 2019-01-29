@@ -4471,10 +4471,9 @@ var _initialiseProps = function _initialiseProps() {
   };
 
   this.validateParam = function (schema, param) {
-    if (param === null || param === undefined) {
+    if (param === null || param === undefined || schema.type === 'boolean') {
       return true;
     }
-    console.log(_this._getType(param), schema.type);
     return _this._getType(param) === schema.type;
   };
 
@@ -4572,7 +4571,6 @@ var createParamsHook = (function (history) {
         var updatedParams = schema.parse(location.search, {
           includeExcess: false
         });
-        console.log(_typeof(updatedParams.queryParam), updatedParams.queryParam);
         setValue(function (value) {
           return _extends({}, value, updatedParams);
         });
@@ -4597,12 +4595,16 @@ var createParamsHook = (function (history) {
               delete relevantParams[paramName];
             }
           });
-          //replace undefined values with default values
           Object.keys(relevantParams).forEach(function (paramName) {
-            if (relevantParams[paramName] === undefined) {
-              var s = schema.getSchemaByName(paramName);
-              if (s) {
+            var s = schema.getSchemaByName(paramName);
+            if (s) {
+              if (relevantParams[paramName] === undefined) {
+                //replace undefined values with default values
                 relevantParams[paramName] = s.defaultValue;
+              }
+              if (s.type === 'boolean') {
+                //coerce to boolean
+                relevantParams[paramName] = !!relevantParams[paramName];
               }
             }
           });
