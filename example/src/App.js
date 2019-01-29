@@ -61,7 +61,7 @@ const booleanOptions = [
   {
     key: "setParams({boolean: null})",
     value: null,
-    hint: 'This works because the value is coerced to a boolean.'
+    hint: "This works because all types are nullable."
   },
   {
     key: "setParams({boolean: false})",
@@ -80,32 +80,106 @@ const booleanOptions = [
   },
 ]
 
+const stringOptions = [
+  {
+    key: "setParams({string: 20})",
+    value: 20,
+    hint: "This is works because 20 is coerced into a string."
+  },
+  {
+    key: "setParams({string: 'foo'})",
+    value: 'foo',
+    hint: "This is works because 'foo' is a string."
+  },
+  {
+    key: "setParams({string: null})",
+    value: null,
+    hint: "This works because all types are nullable."
+  },
+  {
+    key: "setParams({string: false})",
+    value: false,
+    hint: "This is works because false is coerced into a string."
+  },
+  {
+    key: "setParams({string: [1, 2, 3]})",
+    value: [1, 2, 3],
+    hint: "This is works because [1, 2, 3] is coerced into a string."
+  },
+  {
+    key: "setParams({string: undefined})",
+    value: undefined,
+    hint: "This works and triggers the defaultValue."
+  },
+]
+
+
 const arrayOptions = [
   {
     key: "setParams({array: 20})",
-    value: 20
+    value: 20,
+    hint: "This is a no-op because 20 is the wrong type."
   },
   {
     key: "setParams({array: 'foo'})",
-    value: 'foo'
+    value: 'foo',
+    hint: "This is a no-op because 'foo' is the wrong type."
   },
   {
     key: "setParams({array: null})",
-    value: null
+    value: null,
+    hint: "This works because all types are nullable."
   },
   {
     key: "setParams({array: false})",
-    value: false
+    value: false,
+    hint: "This is a no-op because false is the wrong type."
   },
   {
     key: "setParams({array: [1, 2, 3]})",
-    value: [1, 2, 3]
+    value: [1, 2, 3],
+    hint: 'This works because [1, 2, 3] is a valid array.'
   },
   {
     key: "setParams({array: undefined})",
-    value: undefined
+    value: undefined,
+    hint: "This works and triggers the defaultValue."
   },
 ]
+
+const objectOptions = [
+  {
+    key: "setParams({object: 20})",
+    value: 20,
+    hint: "This is a no-op because 20 is the wrong type."
+  },
+  {
+    key: "setParams({object: 'foo'})",
+    value: 'foo',
+    hint: "This is a no-op because 'foo' is the wrong type."
+  },
+  {
+    key: "setParams({object: null})",
+    value: null,
+    hint: "This works because all types are nullable."
+  },
+  {
+    key: "setParams({object: false})",
+    value: false,
+    hint: "This is a no-op because false is the wrong type."
+  },
+  {
+    key: "setParams({object: [1, 2, 3]})",
+    value: [1, 2, 3],
+    hint: 'This works because [1, 2, 3] is a valid object.'
+  },
+  {
+    key: "setParams({object: undefined})",
+    value: undefined,
+    hint: "This works and triggers the defaultValue."
+  },
+]
+
 
 const App = props => {
   let {setParams, data} = useQueryParams([
@@ -120,9 +194,19 @@ const App = props => {
       type: "boolean"
     },
     {
+      name: "string",
+      defaultValue: 'baz',
+      type: "string"
+    },
+    {
       name: "array",
       defaultValue: [],
       type: "array"
+    },
+    {
+      name: "object",
+      defaultValue: {default: 'object'},
+      type: "object"
     }
   ]);
   return (
@@ -145,10 +229,16 @@ const App = props => {
               </Button>
             )
           })}
-          <Button variant="outlined" onClick={() => {history.push({search: '?number=99'})}}>
+          <Button variant="outlined" onClick={() => {
+            history.push({search: '?number=99'})
+            props.enqueueSnackbar('URL updates trigger a react state update immediately')
+          }}>
             <span>{"history.push({search: '?number=99'})"}</span>
           </Button>
-          <Button variant="outlined" onClick={() => {history.push({search: '?number=wrongtype'})}}>
+          <Button variant="outlined" onClick={() => {
+            history.push({search: '?number=wrongtype'})
+            props.enqueueSnackbar('URL updates trigger a react state update immediately')
+          }}>
             <span>{"history.push({search: '?number=wrongtype'})"}</span>
           </Button>
         </div>
@@ -168,10 +258,16 @@ const App = props => {
               </Button>
             )
           })}
-          <Button variant="outlined" onClick={() => {history.push({search: '?boolean=true'})}}>
+          <Button variant="outlined" onClick={() => {
+            history.push({search: '?boolean=true'})
+            props.enqueueSnackbar('URL updates trigger a react state update immediately')
+          }}>
             <span>{"history.push({search: '?boolean=true'})"}</span>
           </Button>
-          <Button variant="outlined" onClick={() => {history.push({search: '?boolean=wrongtype'})}}>
+          <Button variant="outlined" onClick={() => {
+            history.push({search: '?boolean=wrongtype'})
+            props.enqueueSnackbar('URL updates trigger a react state update immediately')
+          }}>
             <span>{"history.push({search: '?boolean=wrongtype'})"}</span>
           </Button>
         </div>
@@ -179,16 +275,81 @@ const App = props => {
           <h2>array: {JSON.stringify(data.array)}</h2>
           {arrayOptions.map((option) => {
             return (
-              <Button variant="outlined" key={option.key} onClick={() => {setParams({array: option.value})}}>
+              <Button
+                variant="outlined"
+                key={option.key}
+                onClick={() => {
+                  setParams({array: option.value})
+                  props.enqueueSnackbar(option.hint)
+                }}
+              >
                 <span>{option.key}</span>
               </Button>
             )
           })}
-          <Button variant="outlined" onClick={() => {history.push({search: '?array=[1,2]'})}}>
+          <Button variant="outlined" onClick={() => {
+            history.push({search: '?array=[1,2]'})
+            props.enqueueSnackbar('URL updates trigger a react state update immediately')
+          }}>
             <span>{"history.push({search: '?array=[1,2]'})"}</span>
           </Button>
-          <Button variant="outlined" onClick={() => {history.push({search: '?array=wrongtype'})}}>
+          <Button variant="outlined" onClick={() => {
+            history.push({search: '?array=wrongtype'})
+            props.enqueueSnackbar('URL updates trigger a react state update immediately')
+          }}>
             <span>{"history.push({search: '?array=wrongtype'})"}</span>
+          </Button>
+        </div>
+        <div className="param-container">
+          <h2>string: {JSON.stringify(data.string)}</h2>
+          {stringOptions.map((option) => {
+            return (
+              <Button
+                variant="outlined"
+                key={option.key}
+                onClick={() => {
+                  setParams({string: option.value})
+                  props.enqueueSnackbar(option.hint)
+                }}
+              >
+                <span>{option.key}</span>
+              </Button>
+            )
+          })}
+          <Button variant="outlined" onClick={() => {
+            history.push({search: '?string=bar'})
+            props.enqueueSnackbar('URL updates trigger a react state update immediately')
+          }}>
+            <span>{"history.push({search: '?string=bar'})"}</span>
+          </Button>
+        </div>
+        <div className="param-container">
+          <h2>object: {JSON.stringify(data.object)}</h2>
+          {objectOptions.map((option) => {
+            return (
+              <Button
+                variant="outlined"
+                key={option.key}
+                onClick={() => {
+                  setParams({object: option.value})
+                  props.enqueueSnackbar(option.hint)
+                }}
+              >
+                <span>{option.key}</span>
+              </Button>
+            )
+          })}
+          <Button variant="outlined" onClick={() => {
+            history.push({search: '?object={"options": 0}'})
+            props.enqueueSnackbar('URL updates trigger a react state update immediately')
+          }}>
+            <span>{`history.push({search: '?object={"options": 0}'})`}</span>
+          </Button>
+          <Button variant="outlined" onClick={() => {
+            history.push({search: '?object=wrongtype'})
+            props.enqueueSnackbar('URL updates trigger a react state update immediately')
+          }}>
+            <span>{"history.push({search: '?object=wrongtype'})"}</span>
           </Button>
         </div>
       </div>

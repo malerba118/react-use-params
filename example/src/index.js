@@ -6,7 +6,7 @@ import App from './App'
 import { SnackbarProvider } from 'notistack';
 
 ReactDOM.render(
-  <SnackbarProvider maxSnack={1}>
+  <SnackbarProvider transitionDuration={{ exit: 100, enter: 100 }} maxSnack={2}>
       <App />
   </SnackbarProvider>
   ,

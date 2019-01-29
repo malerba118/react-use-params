@@ -90,8 +90,12 @@ export default (history) => (paramsSchema) => {
               relevantParams[paramName] = s.defaultValue
             }
             if (s.type === 'boolean') {
-              //coerce to boolean
-              relevantParams[paramName] = !!relevantParams[paramName]
+              //coerce to nullable boolean
+              relevantParams[paramName] = relevantParams[paramName] === null ? null : !!relevantParams[paramName]
+            }
+            else if (s.type === 'string') {
+              //coerce to nullable string
+              relevantParams[paramName] = relevantParams[paramName] === null ? null : String(relevantParams[paramName])
             }
           }
         })

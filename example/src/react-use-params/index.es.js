@@ -4380,7 +4380,8 @@ function coerceAfterParse(schema, param) {
       throw new Error("Not a number");
     }
   } else if (schema.type === "boolean") {
-    if (param === "false") {
+    if (param === "false" || param === "0" || param === "NaN") {
+      // handle falsey values
       coercedParam = false;
     } else {
       coercedParam = !!param;
@@ -4420,6 +4421,7 @@ var _initialiseProps = function _initialiseProps() {
   var _this = this;
 
   this.validateSchemas = function (schemas) {
+    // TODO: substitute in validateParams here
     var errors = schemas.map(function (schema) {
       if (_typeof(schema.defaultValue) === schema.type) {
         return;
@@ -4471,7 +4473,7 @@ var _initialiseProps = function _initialiseProps() {
   };
 
   this.validateParam = function (schema, param) {
-    if (param === null || param === undefined || schema.type === 'boolean') {
+    if (param === null || param === undefined || schema.type === 'boolean' || schema.type === 'string') {
       return true;
     }
     return _this._getType(param) === schema.type;
@@ -4603,8 +4605,11 @@ var createParamsHook = (function (history) {
                 relevantParams[paramName] = s.defaultValue;
               }
               if (s.type === 'boolean') {
-                //coerce to boolean
-                relevantParams[paramName] = !!relevantParams[paramName];
+                //coerce to nullable boolean
+                relevantParams[paramName] = relevantParams[paramName] === null ? null : !!relevantParams[paramName];
+              } else if (s.type === 'string') {
+                //coerce to nullable string
+                relevantParams[paramName] = relevantParams[paramName] === null ? null : String(relevantParams[paramName]);
               }
             }
           });

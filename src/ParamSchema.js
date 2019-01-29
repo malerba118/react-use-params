@@ -14,9 +14,11 @@ function coerceAfterParse(schema, param) {
       throw new Error("Not a number");
     }
   } else if (schema.type === "boolean") {
-    if (param === "false") {
+    if (param === "false" || param === "0" || param === "NaN") {
+      // handle falsey values
       coercedParam = false;
-    } else {
+    }
+    else {
       coercedParam = !!param;
     }
   } else if (schema.type === "array") {
@@ -44,6 +46,7 @@ class ParamSchema {
   }
 
   validateSchemas = schemas => {
+    // TODO: substitute in validateParams here
     let errors = schemas.map(schema => {
       if (typeof schema.defaultValue === schema.type) {
         return;
@@ -94,7 +97,12 @@ class ParamSchema {
   }
 
   validateParam = (schema, param) => {
-    if (param === null || param === undefined || schema.type === 'boolean') {
+    if (
+      param === null ||
+      param === undefined ||
+      schema.type === 'boolean' ||
+      schema.type === 'string'
+    ) {
       return true
     }
     return this._getType(param) === schema.type

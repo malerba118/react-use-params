@@ -6,12 +6,12 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
 }
 
 .param-container button {
-  width: 300px;
+  width: 240px;
   margin: 8px;
   text-transform: none;
+  font-size: 12px;
 }
