@@ -4416,7 +4416,7 @@ function coerceAfterParse(schema, param) {
 function coerceBeforeStringify(schema, param) {
   var coercedParam = param;
   if (schema.type === "array" || schema.type === "object") {
-    coercedParam = JSON.stringify(param);
+    coercedParam = param === null ? null : JSON.stringify(param);
   }
   return coercedParam;
 }
@@ -4509,6 +4509,17 @@ var ParamSchema = function ParamSchema(schemas) {
     return coercedParams;
   };
 
+  this.transformParams = function (params) {
+    var transformedParams = _extends({}, params);
+    Object.keys(params).forEach(function (paramName) {
+      var schema = _this.getSchemaByName(paramName);
+      if (schema && typeof schema.transform === 'function') {
+        transformedParams[paramName] = schema.transform(params[paramName]);
+      }
+    });
+    return transformedParams;
+  };
+
   this.processAfterParse = function (schema, param) {
     try {
       param = coerceAfterParse(schema, param);
@@ -4566,6 +4577,11 @@ var ParamSchema = function ParamSchema(schemas) {
 
 var createParamsHook = (function (history) {
   return function (paramsSchema) {
+    var _ref = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {},
+        _ref$defaultDebounceT = _ref.defaultDebounceTime,
+        defaultDebounceTime = _ref$defaultDebounceT === undefined ? 0 : _ref$defaultDebounceT,
+        _ref$defaultSyncType = _ref.defaultSyncType,
+        defaultSyncType = _ref$defaultSyncType === undefined ? "push" : _ref$defaultSyncType;
 
     var schema = new ParamSchema(paramsSchema);
 
@@ -4581,17 +4597,22 @@ var createParamsHook = (function (history) {
       return params;
     };
 
-    var _useState = useState(0),
+    var _useState = useState(defaultDebounceTime),
         _useState2 = slicedToArray(_useState, 2),
         debounceTime = _useState2[0],
-        setDebounceTime = _useState2[1];
+        _setDebounceTime = _useState2[1];
 
-    var _useState3 = useState(processParams(schema.parse(window.location.search, {
+    var _useState3 = useState(defaultSyncType),
+        _useState4 = slicedToArray(_useState3, 2),
+        syncType = _useState4[0],
+        _setSyncType = _useState4[1];
+
+    var _useState5 = useState(processParams(schema.parse(window.location.search, {
       includeExcess: false
     }))),
-        _useState4 = slicedToArray(_useState3, 2),
-        value = _useState4[0],
-        setValue = _useState4[1];
+        _useState6 = slicedToArray(_useState5, 2),
+        value = _useState6[0],
+        setValue = _useState6[1];
 
     var syncQueryParams = useRef();
 
@@ -4607,12 +4628,12 @@ var createParamsHook = (function (history) {
         });
 
         if (!isEqual_1(relevantPrevParams, value)) {
-          history.push({
+          history[syncType]({
             search: schema.stringify(_extends({}, allPrevParams, value), { includeExcess: true })
           });
         }
       }, debounceTime);
-    }, [debounceTime]);
+    }, [debounceTime, syncType]);
 
     useEffect(function () {
       syncQueryParams.current(value);
@@ -4645,7 +4666,21 @@ var createParamsHook = (function (history) {
 
     return {
       data: value,
-      setParams: setParams
+      setParams: setParams,
+      debounceTime: debounceTime,
+      setDebounceTime: function setDebounceTime(time) {
+        time = Number(time);
+        time = Number.isNaN(time) ? 0 : time;
+        time = Math.max(0, time);
+        _setDebounceTime(time);
+      },
+      syncType: syncType,
+      setSyncType: function setSyncType(type) {
+        if (!['push', 'replace'].includes(type)) {
+          type = 'push';
+        }
+        _setSyncType(type);
+      }
     };
   };
 });

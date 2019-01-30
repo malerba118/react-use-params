@@ -37,7 +37,7 @@ function coerceAfterParse(schema, param) {
 function coerceBeforeStringify(schema, param) {
   let coercedParam = param;
   if (schema.type === "array" || schema.type === "object") {
-    coercedParam = JSON.stringify(param);
+    coercedParam = param === null ? null : JSON.stringify(param);
   }
   return coercedParam;
 }
@@ -142,6 +142,17 @@ class ParamSchema {
       }
     })
     return coercedParams
+  }
+
+  transformParams = (params) => {
+    let transformedParams = {...params}
+    Object.keys(params).forEach((paramName) => {
+      let schema = this.getSchemaByName(paramName)
+      if (schema && (typeof schema.transform) === 'function') {
+         transformedParams[paramName] = schema.transform(params[paramName])
+      }
+    })
+    return transformedParams
   }
 
   processAfterParse = (schema, param) => {

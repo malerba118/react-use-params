@@ -1,5 +1,17 @@
+.controls {
+  display: flex;
+  justify-content: center;
+}
+
+.dropdown {
+  margin: 16px !important;
+  padding: 8px;
+  width: 115px !important;
+}
+
 .params-container {
   display: flex;
+  flex-wrap: wrap;
 }
 
 .param-container {

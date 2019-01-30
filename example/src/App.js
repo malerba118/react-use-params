@@ -1,18 +1,13 @@
-import React, { Component } from "react";
-import Slider from "@material-ui/lab/Slider";
-import Radio from '@material-ui/core/Radio';
-import RadioGroup from '@material-ui/core/RadioGroup';
-import FormHelperText from '@material-ui/core/FormHelperText';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
+import React from "react";
 import FormControl from '@material-ui/core/FormControl';
-import FormLabel from '@material-ui/core/FormLabel';
 import Button from '@material-ui/core/Button';
+import Select from '@material-ui/core/Select';
+import MenuItem from '@material-ui/core/MenuItem';
+import InputLabel from '@material-ui/core/InputLabel';
 import history from './history'
-import styles from './App.css'
+import './App.css'
 import useQueryParams from "./useQueryParams";
 import { withSnackbar } from 'notistack';
-
-import { Route, Link, Switch, Redirect } from "react-router-dom";
 
 const numberOptions = [
   {
@@ -182,7 +177,14 @@ const objectOptions = [
 
 
 const App = props => {
-  let {setParams, data} = useQueryParams([
+  let {
+    setParams,
+    data,
+    debounceTime,
+    setDebounceTime,
+    syncType,
+    setSyncType
+  } = useQueryParams([
     {
       name: "number",
       defaultValue: 10,
@@ -212,9 +214,45 @@ const App = props => {
   return (
     <div className="App">
       <h1 style={{textAlign: 'center'}}>Query Params Hook</h1>
+      <div className="controls">
+        <FormControl className="dropdown">
+          <InputLabel htmlFor="debounce-time">Debounce Time</InputLabel>
+          <Select
+            value={debounceTime}
+            onChange={(e) => setDebounceTime(e.target.value)}
+            inputProps={{
+              name: 'debounce-time',
+              id: 'debounce-time',
+            }}
+          >
+            <MenuItem value={0}>
+              0 ms
+            </MenuItem>
+            <MenuItem value={1000}>1000 ms</MenuItem>
+            <MenuItem value={2000}>2000 ms</MenuItem>
+            <MenuItem value={3000}>3000 ms</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl className="dropdown">
+          <InputLabel htmlFor="sync-type">Sync Type</InputLabel>
+          <Select
+            value={syncType}
+            onChange={(e) => setSyncType(e.target.value)}
+            inputProps={{
+              name: 'sync-type',
+              id: 'sync-type',
+            }}
+          >
+            <MenuItem value={'push'}>
+              push
+            </MenuItem>
+            <MenuItem value={'replace'}>replace</MenuItem>
+          </Select>
+        </FormControl>
+      </div>
       <div className="params-container">
         <div className="param-container">
-          <h2>number: {String(data.number)}</h2>
+          <h3>number: {String(data.number)}</h3>
           {numberOptions.map((option) => {
             return (
               <Button
@@ -243,7 +281,7 @@ const App = props => {
           </Button>
         </div>
         <div className="param-container">
-          <h2>boolean: {String(data.boolean)}</h2>
+          <h3>boolean: {String(data.boolean)}</h3>
           {booleanOptions.map((option) => {
             return (
               <Button
@@ -272,7 +310,7 @@ const App = props => {
           </Button>
         </div>
         <div className="param-container">
-          <h2>array: {JSON.stringify(data.array)}</h2>
+          <h3>array: {JSON.stringify(data.array)}</h3>
           {arrayOptions.map((option) => {
             return (
               <Button
@@ -301,7 +339,7 @@ const App = props => {
           </Button>
         </div>
         <div className="param-container">
-          <h2>string: {JSON.stringify(data.string)}</h2>
+          <h3>string: {JSON.stringify(data.string)}</h3>
           {stringOptions.map((option) => {
             return (
               <Button
@@ -324,7 +362,7 @@ const App = props => {
           </Button>
         </div>
         <div className="param-container">
-          <h2>object: {JSON.stringify(data.object)}</h2>
+          <h3>object: {JSON.stringify(data.object)}</h3>
           {objectOptions.map((option) => {
             return (
               <Button
